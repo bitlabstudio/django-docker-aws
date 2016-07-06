@@ -1,0 +1,16 @@
+web:
+  restart: always
+  build: .
+  expose:
+    - "8000"
+  volumes:
+    - /home/docker/code/
+nginx:
+  dockerfile: nginx.Dockerfile
+  build: .
+  ports:
+    - "80:80"
+  links:
+    - web:web
+  volumes_from:
+    - web

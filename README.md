@@ -27,4 +27,34 @@ I might add guides to set them up later.
 
 ## Once the project is ready
 
-WIP
+* install docker toolbox https://www.docker.com/products/docker-toolbox
+* you can test the setup locally by running
+    * `docker-machine create -d virtualbox --virtual-memory "4048" myproject`
+    * `eval $(docker-machine env myproject)`
+    * `docker-compose build`
+    * `docker-compose up -d`
+    * `docker-machine ls` and copy the IP there
+    * navigate to the IP in a browser
+    
+If you were only to create a single server project on AWS, you could just finish
+this by setting up your AWS credentials and by then typing:
+
+
+    docker-machine create -d amazonec2 myprojectaws
+    eval $(docker-machine env myprojectaws)
+    docker-compose build
+    docker-compose up -d
+    
+Then you should have your single instance ready and deployed on AWS. Note, that
+default availability zone is US East.
+
+But obviously we don't want that. So we'll continue with CI.
+
+
+# Notes and TODOs
+
+I use this section to just quickly note down some things, that I or you should
+keep in mind.
+
+* ATM I use gunicorn instead of uwsgi, because it just worked as opposed to
+  uwsgi, which seemed to fail even in the simplest of setups
