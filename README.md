@@ -1,5 +1,7 @@
 # Simple research template for Django on AWS
 
+This is WIP. Not intended to be used in the wild, yet.
+
 This project aims to aid in researching an AWS infrastructure including:
 
 * Running a scalable cluster on ECS/EC2 with Django/uwsgi/nginx
