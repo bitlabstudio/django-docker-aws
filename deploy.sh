@@ -6,7 +6,7 @@ set -e
 set -u
 set -o pipefail
 
-PROJECT_NAME = "myproject"
+PROJECT_NAME="myproject"
 
 # more bash-friendly output for jq
 JQ="jq --raw-output --exit-status"

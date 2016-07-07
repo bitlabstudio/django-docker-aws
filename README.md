@@ -61,6 +61,7 @@ I might add guides to set them up later.
   
 Before we continue here, we'll set up Docker Hub.
 
+
 ## Docker Hub
 
 * make an account at hub.docker.com or log in. The first private repo is free.
@@ -75,6 +76,8 @@ Before we continue here, we'll set up Docker Hub.
 * add a `deploy.sh` and add that to the `cirlce.yml`
     * what the `deploy.sh` should do at this stage is build the docker image
       and push it to the docker hub.
+
+
 
 # Notes and TODOs
 
