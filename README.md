@@ -13,6 +13,12 @@ This project aims to aid in researching an AWS infrastructure including:
 * A yet undefined thumbnailing service
 * A service, that triggers certain commands once per deployment
 
+At first I intended to write the setup steps below only for setting up THIS
+particular project, but I figured, that the problems, I faced lied in upgrading
+a different existing project to this stack, so I'll go over all of the steps
+required and leave it up to you to skip, what you don't need.
+
+
 # Setting up the project
 
 ## Starting from an empty project you need to...
@@ -35,21 +41,18 @@ I might add guides to set them up later.
     * `docker-compose up -d`
     * `docker-machine ls` and copy the IP there
     * navigate to the IP in a browser
+    * ...
+    * Profit!
     
-If you were only to create a single server project on AWS, you could just finish
-this by setting up your AWS credentials and by then typing:
 
+## Continuous Integration
 
-    docker-machine create -d amazonec2 myprojectaws
-    eval $(docker-machine env myprojectaws)
-    docker-compose build
-    docker-compose up -d
-    
-Then you should have your single instance ready and deployed on AWS. Note, that
-default availability zone is US East.
-
-But obviously we don't want that. So we'll continue with CI.
-
+* make an account at circleci.com or log in and link your github account
+* go to "ADD PROJECTS" and find the project, you'd like to build and click "Build project"
+* the first build will probably do nothing but run 0 tests, which results in a
+  successful build
+* now add a `circle.yml` that actually does stuff and some tests, if you don't
+  have any already
 
 # Notes and TODOs
 
