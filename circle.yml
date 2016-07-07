@@ -10,9 +10,8 @@ test:
   override:
     - python manage.py test --settings myproject.test_settings --pattern='*_tests.py'
 
-# We'll take care of deployment later
-#deployment:
-#  hub:
-#    branch: master
-#    commands:
-#      - ./deploy.sh
+deployment:
+  hub:
+    branch: master
+    commands:
+      - ./deploy.sh

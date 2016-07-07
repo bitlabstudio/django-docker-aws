@@ -18,6 +18,9 @@ particular project, but I figured, that the problems, I faced lied in upgrading
 a different existing project to this stack, so I'll go over all of the steps
 required and leave it up to you to skip, what you don't need.
 
+The referenced files can obviously looked up inside this repo. They won't fit
+all purposes, but might be a good starting point.
+
 
 # Setting up the project
 
@@ -53,6 +56,25 @@ I might add guides to set them up later.
   successful build
 * now add a `circle.yml` that actually does stuff and some tests, if you don't
   have any already
+* commit and push the changes and circleci will pick up on that and execute the
+  commands from `circle.yml`
+  
+Before we continue here, we'll set up Docker Hub.
+
+## Docker Hub
+
+* make an account at hub.docker.com or log in. The first private repo is free.
+* create a new private repo `username/myproject`
+* go back to circleci and go to your new project and to "Project Settings"
+* there go to "Environment Variables"
+* define variables `DOCKER_EMAIL`, `DOCKER_PASS` (password) and `DOCKER_USER`
+* also while you're at it, you need to define `AWS_ACCESS_KEY_ID`,
+  `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION`
+    * look up AWS availability zones or use something like `ap-southeast-1` for
+      Singapore. It doesn't really matter, if you just want to test
+* add a `deploy.sh` and add that to the `cirlce.yml`
+    * what the `deploy.sh` should do at this stage is build the docker image
+      and push it to the docker hub.
 
 # Notes and TODOs
 
