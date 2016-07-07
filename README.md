@@ -57,4 +57,15 @@ I use this section to just quickly note down some things, that I or you should
 keep in mind.
 
 * ATM I use gunicorn instead of uwsgi, because it just worked as opposed to
-  uwsgi, which seemed to fail even in the simplest of setups
+  uwsgi, which seemed to fail even in the simplest of setups.  
+  To verify this, clone the project and do the following steps:
+    * open `Dockerfile` and commend out the 2nd last line and comment in the
+      last. You should now have enabled the `CMD` containing `uwsgi`.
+    * if you haven't already created a virtual machine for `myproject` enter
+      `docker-machine create -d virtualbox --virtual-memory "4048" myproject`
+    * `eval $(docker-machine env myproject)`
+    * `docker-compose build`
+    * `docker-compose up -d`
+    * `docker-machine ls` and copy the IP there
+    * navigate to the IP in a browser
+    * It should show a 503 error
