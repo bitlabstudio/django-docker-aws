@@ -61,6 +61,7 @@ keep in mind.
   To verify this, clone the project and do the following steps:
     * open `Dockerfile` and commend out the 2nd last line and comment in the
       last. You should now have enabled the `CMD` containing `uwsgi`.
+    * comment uWSGI back in in the `requirements.txt` file
     * if you haven't already created a virtual machine for `myproject` enter
       `docker-machine create -d virtualbox --virtual-memory "4048" myproject`
     * `eval $(docker-machine env myproject)`
@@ -68,4 +69,5 @@ keep in mind.
     * `docker-compose up -d`
     * `docker-machine ls` and copy the IP there
     * navigate to the IP in a browser
-    * It should show a 503 error
+    * It should show a 503 or a 404 error depending on how future commits might
+      change the `uwsgi.ini`
