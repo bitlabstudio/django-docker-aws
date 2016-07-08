@@ -96,12 +96,12 @@ Before we continue here, we'll set up Docker Hub.
 * Uncheck "Store container images securelt with Amazon ECR" > Continue
 * Now consistent naming is important!
 * Task definition name: myproject-task
-* Container name: web
-* Image: mydockeruser/myproject
+* Container name: nginx
+* Image: nginx
 * The rest we keep for now > Next step
 * Service name: myproject-service
 * Desired number of tasks: 2
-* Container name:host port: web:80
+* Container name:host port: nginx:80
 * The Rest can stay like this. The IAM Role at the bottom should be created.
   ECS takes care of this for you then. > Next step
 * Cluster name: myproject
@@ -283,4 +283,4 @@ keep in mind.
     * It should show a 503 or a 404 error depending on how future commits might
       change the `uwsgi.ini`
 * I'm actually thinking about giving Amazon ECR a go. But I think it isn't
-  available in all zones 
+  available in all zones
