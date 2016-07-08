@@ -104,4 +104,4 @@ deploy_cluster() {
 }
 
 deploy_image
-#deploy_cluster
+deploy_cluster
