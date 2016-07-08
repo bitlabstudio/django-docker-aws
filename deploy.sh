@@ -54,7 +54,7 @@ make_task_def() {
 	    "cpu": 256,
 	    "memory": 128,
 	    "essential": true
-	},
+	}
     ]'
 
     task_def=$(printf "$task_template" $DOCKER_USER $PROJECT_NAME $CIRCLE_SHA1)
