@@ -31,7 +31,7 @@ make_task_def() {
     task_template='[
 	{
 	    "name": "web",
-	    "image": "$DOCKER_USER/$PROJECT_NAME:%s",
+	    "image": "%s/%s:%s",
 	    "portMappings": [
             {
                 "containerPort": 8000,
@@ -57,7 +57,7 @@ make_task_def() {
 	},
     ]'
 
-    task_def=$(printf "$task_template" $CIRCLE_SHA1)
+    task_def=$(printf "$task_template" $DOCKER_USER $PROJECT_NAME $CIRCLE_SHA1)
 
 }
 
