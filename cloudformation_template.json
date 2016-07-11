@@ -123,11 +123,6 @@
       "Default": "ecsInstanceRole",
       "Description": "Name or the Amazon Resource Name (ARN) of the instance profile associated with the IAM role for the instance"
     },
-    "EcsClusterName": {
-      "Type": "String",
-      "Description": "ECS Cluster Name",
-      "Default": "myproject"
-    },
     "EcsPort": {
       "Type": "String",
       "Description": "Optional - Security Group port to open on ECS instances - defaults to port 80",
@@ -281,6 +276,9 @@
     }
   },
   "Resources": {
+    "EcsCluster": {
+      "Type": "AWS::ECS::Cluster"
+    },
     "Vpc": {
       "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::VPC",
@@ -709,7 +707,7 @@
                     "#!/bin/bash\n",
                     "echo ECS_CLUSTER=",
                     {
-                      "Ref": "EcsClusterName"
+                      "Ref": "EcsCluster"
                     },
                     " >> /etc/ecs/ecs.config",
                     "\necho ECS_BACKEND_HOST=",
@@ -729,7 +727,7 @@
                     "#!/bin/bash\n",
                     "echo ECS_CLUSTER=",
                     {
-                      "Ref": "EcsClusterName"
+                      "Ref": "EcsCluster"
                     },
                     " >> /etc/ecs/ecs.config"
                   ]
@@ -775,7 +773,7 @@
                     "#!/bin/bash\n",
                     "echo ECS_CLUSTER=",
                     {
-                      "Ref": "EcsClusterName"
+                      "Ref": "EcsCluster"
                     },
                     " >> /etc/ecs/ecs.config",
                     "\necho ECS_BACKEND_HOST=",
@@ -795,7 +793,7 @@
                     "#!/bin/bash\n",
                     "echo ECS_CLUSTER=",
                     {
-                      "Ref": "EcsClusterName"
+                      "Ref": "EcsCluster"
                     },
                     " >> /etc/ecs/ecs.config"
                   ]
