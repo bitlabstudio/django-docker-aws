@@ -284,3 +284,14 @@ keep in mind.
       change the `uwsgi.ini`
 * I'm actually thinking about giving Amazon ECR a go. But I think it isn't
   available in all zones
+* I'm experiencing an issue, that after updating the launch configuration of a
+  cluster, afterwards there's a new cluster `default` where the new instances
+  are spawned in, leaving the original cluster empty.  
+  How to verify:
+  * spawn a new cluster `myproject` through the first run wizard
+  * go through the launch configuration setup (copy, add user data, copy again)
+  * once you have set the ASG to respawn 2 instances and they get to the 
+    initializing state, the second cluster appears.
+  * I assume, that it's an error with the CloudFormation template used by ECS.
+    `Parameters.EcsClusterName.Default` is `default`. Could it be, that it
+    falls back to this value?
