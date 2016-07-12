@@ -85,47 +85,6 @@ Before we continue here, we'll set up Docker Hub.
       and push it to the docker hub.
 
 
-## ECS
-
-* Log in to aws.amazon.com
-* Go to EC2 Container Service (short: ECS)
-* Click "Get started" 
-    * if you already have a cluster, visit the first run wizard again through
-      this link https://console.aws.amazon.com/ecs/home?region=us-east-1#/firstRun
-    * change region to whatever you want
-* Uncheck "Store container images securelt with Amazon ECR" > Continue
-* Now consistent naming is important!
-* Task definition name: myproject-task
-* Container name: nginx
-* Image: nginx
-* The rest we keep for now > Next step
-* Service name: myproject-service
-* Desired number of tasks: 2
-* Container name:host port: nginx:80
-* The Rest can stay like this. The IAM Role at the bottom should be created.
-  ECS takes care of this for you then. > Next step
-* Cluster name: myproject
-* EC2 instance type: keept it at t2.micro for now. Probably want at least a
-  small later, because we'll be adding Celery workers to each instance as well.  
-  But micro is within the free tier, so let's keep it at this.
-* Number of instances: 2 (the same as No of tasks)
-* Create a Key Pair in the EC2 console (link below the dropdown) and select that.  
-  Make sure, you have the file ready and safely stored as you will need it for
-  SSH.
-* Here you do the same with the instance IAM role as we did before with the
-  service role. > Review & launch
-* Check for typos again and if everything looks correct click "Launch instance
-  & run service"
-* Now ECS will pull up its Amazon CloudFormation template to create all
-  security groups, instances, ELB, ASG etc.
-* Once that is done click "View Service"
-
-Thkre should now be 2 instances listed and a desired task count of 2.
-The issue is however, that the instances won't be able to pull from the docker
-hub, because we've created a private repo.
-We need to work around this a little bit.
-
-
 ## Preparing secret settings
 
 * Go to Amazon IAM > Roles > ecsInstanceRole (that's the one ECS just created)
@@ -150,6 +109,7 @@ We need to work around this a little bit.
           }
       ]
     }
+    
 * Locally create the file ecs.config and add
 
 
@@ -172,79 +132,24 @@ We need to work around this a little bit.
 This is btw how we will later deal with secret server settings as well.
   
 
-## Updating Launch Configurations
+## Provisioning with CloudFormation
 
-* Go to Amazon EC2 Console
-* Go to launch configurations
-* Select the launch configuration, that ECS just generated
-* Click "Copy launch configuration"
-* Open "Configure Details" Tab and "Advanced Details"
-* Replace "User data" with following code:
-
-
-    #!/bin/bash
-    yum install -y aws-cli
-    aws s3 cp s3://BUCKETNAME/ecs.config /etc/ecs/ecs.config
-    
-* This means, that this is executed every time a container instance is launched
-  from this launch configuration
-* Skip to Review
-* Create launch configuration
-* Select key pair, that you've previously created and Create launch configuration
-* Go to Auto Scaling Groups and select the ECS created one
-* On the Details tab click Edit
-* Select the copied launch configuration AND the load balancer, that ECS created
-* Set Desired and Min to 0 and click Save
-* This will actually despawn all the instances, but that's okay, we want them to
-  be recreated with the new LC later
-
-Now there's one problem. Since the new LC is called something like
-`EC2ContainerService-myproject-EcsInstanceLc-somethingCopy`, this isn't the name
-that was assigned in the CloudFormation Template, that was used to spawn the
-instances in the first place, when we used the wizard earlier.
-That means, when you want to change it in the backend, things might not work,
-because it doesn't recognize it any more.
-I found that you can do the following:
-
-* Go to LC screen again
-* Select the original LC (without the "Copy" at the end) and click Actions
-  > Delete launch configuration
-* Select the new LC and click "Copy launch configuration" again
-* Now go to "Configure details" again, but only remove the "CopyCopy" from the
-  name
-* Skip to Review > Create > select key > Create > Close
-* Back to the auto scaling group again and > Edit
-* Set Desired back to 2 and Min back to 1
-* Select the Launch Configuration, that doesn't have the "Copy" at the end
-* Save
-
-Now this will respawn the 2 instances with the new LC, that contains the proper
-`ecs.config`, which means, that the instance is now able to pull from our
-private docker repo.
-
-
-## Making first deployment
-
-* You should see, that the myproject cluster shows 2 registered container
-  instances
-* When you open the cluster and go to the Tasks tab, you might see a pending
-  task pop up or see a bunch of stopped tasks under the "stopped" filter.
-* Now we need to rebuild with the full `deploy.sh` script since for now we
-  only pushed the image to the hub. Now we also want to tell ECS, what the
-  new image is called exactly and update the task definition and the service
-  of our cluster. That means, that it will be able to pull the new image and
-  deploy it on the instances.
-* Submit the updated `deploy.sh` to the repo or if you already have it, just
-  go to circleci and click "Rebuild".
-* Wait for it. It should run the tests really fast and then upload the image
-  and after that is done update the task definition.
+* Add CloudFormation template to your project
+    * you can download the ECS default template and go from there or take the
+      one from this project as example to customize to your needs
+* Go To Amazon CloudFormation
+* Click "Create Stack"
+* Choose to upload your template
+    * Optionally you can upload the template to one of your S3 buckets and
+      just insert the link
+* Click Next
+* Fill out "Stack name" and other required fields
+    * "SecretsBucket" refers to the `BUCKETNAME`, that we've used earlier
+* Click Next and Next again (which skips the Options/Tags step)
+* Review and click "Create"
+* Wait until the stack is created and then visit EC2 Container Service, where
+  you can review your cluster running 
   
-If everything is correct, then you can check the cluster and notice, that under
-the service Tab, the task definition should have changed from `myproject-task:1`
-to `myproject-task:2`, which means, it's the new version of the task with the
-new image.
-And under Tasks it should either have 2 tasks with status "RUNNING" or "PENDING"
-which should soon turn into "RUNNING".
 
 ## Deploy issues
 
