@@ -17,9 +17,9 @@ deploy_image() {
 #    aws s3 cp s3://mysecretbucket/server_settings.py.$PROJECT_NAME ../server_settings.py --region ap-southeast-1
     docker-compose build web
     docker images
-    # TODO find better way to define this container name > not hard coded
     docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
     # tag with current sha to uniquely identify image and upload
+    # TODO find better way to define this container name > not hard coded
     docker tag djangodockeraws_web $DOCKER_USER/$PROJECT_NAME:$CIRCLE_SHA1
     docker push $DOCKER_USER/$PROJECT_NAME:$CIRCLE_SHA1 | cat
     # tag again as latest for easier reference and upload again
