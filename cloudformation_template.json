@@ -51,6 +51,10 @@
     }
   },
   "Parameters": {
+    "SecretsBucket": {
+      "Type": "String",
+      "Description": "Specify bucket name, that contains ecs.config and other secrets files."
+    },
     "EcsAmiId": {
       "Type": "String",
       "Default": "ami-24c71547",
@@ -101,18 +105,6 @@
       "Description": "Optional - Name of an existing EC2 KeyPair to enable SSH access to the ECS instances",
       "Default": "myproject"
     },
-    "VpcId": {
-      "Type": "String",
-      "Description": "Optional - VPC Id of existing VPC. Leave blank to have a new VPC created",
-      "Default": "",
-      "AllowedPattern": "^(?:vpc-[0-9a-f]{8}|)$",
-      "ConstraintDescription": "VPC Id must begin with 'vpc-' or leave blank to have a new VPC created"
-    },
-    "SubnetIds": {
-      "Type": "CommaDelimitedList",
-      "Description": "Optional - Comma separated list of existing VPC Subnet Ids where ECS instances will run",
-      "Default": ""
-    },
     "AsgMaxSize": {
       "Type": "Number",
       "Description": "Maximum size and initial Desired Capacity of ECS Auto Scaling Group",
@@ -148,16 +140,6 @@
       "Description": "Optional - CIDR/IP range for EcsPort and ElbPort - defaults to 0.0.0.0/0",
       "Default": "0.0.0.0/0"
     },
-    "EcsEndpoint": {
-      "Type": "String",
-      "Description": "Optional : ECS Endpoint for the ECS Agent to connect to",
-      "Default": ""
-    },
-    "CreateElasticLoadBalancer": {
-      "Type": "String",
-      "Description": "Optional : When set to true, creates a ELB for ECS Service",
-      "Default": "true"
-    },
     "VpcAvailabilityZones": {
       "Type": "CommaDelimitedList",
       "Description": "Optional : Comma-delimited list of two VPC availability zones in which to create subnets",
@@ -165,78 +147,6 @@
     }
   },
   "Conditions": {
-    "CreateVpcResources": {
-      "Fn::Equals": [
-        {
-          "Ref": "VpcId"
-        },
-        ""
-      ]
-    },
-    "ExistingVpcResources": {
-      "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "VpcId"
-            },
-            ""
-          ]
-        }
-      ]
-    },
-    "SetEndpointToECSAgent": {
-      "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "EcsEndpoint"
-            },
-            ""
-          ]
-        }
-      ]
-    },
-    "CreateELBForExistingVpc": {
-      "Fn::And": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "CreateElasticLoadBalancer"
-            },
-            "true"
-          ]
-        },
-        {
-          "Condition": "ExistingVpcResources"
-        }
-      ]
-    },
-    "CreateELBForNewVpc": {
-      "Fn::And": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "CreateElasticLoadBalancer"
-            },
-            "true"
-          ]
-        },
-        {
-          "Condition": "CreateVpcResources"
-        }
-      ]
-    },
-    "CreateELB": {
-      "Fn::Or": [
-        {
-          "Condition": "CreateELBForExistingVpc"
-        },
-        {
-          "Condition": "CreateELBForNewVpc"
-        }
-      ]
-    },
     "CreateEC2LCWithKeyPair": {
       "Fn::Not": [
         {
@@ -279,8 +189,45 @@
     "EcsCluster": {
       "Type": "AWS::ECS::Cluster"
     },
+    "TaskDefinitions": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Name": "nginx",
+            "Image": "nginx",
+            "Cpu": "10",
+            "PortMappings": [
+              {
+                "ContainerPort": "80",
+                "HostPort": "80"
+              }
+            ],
+            "Command": [
+              "nginx -g \"daemon off;\""
+            ],
+            "Memory": "128",
+            "Essential": "true"
+          },
+          {
+            "Name": "web",
+            "Image": "bitmazk/myproject:latest",
+            "Cpu": "10",
+            "PortMappings": [
+              {
+                "ContainerPort": "8000",
+                "HostPort": "8000"
+              }
+            ],
+            "Memory": "256",
+            "Essential": "true"
+          }
+        ]
+      }
+    },
+
+
     "Vpc": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::VPC",
       "Properties": {
         "CidrBlock": {
@@ -302,7 +249,6 @@
       }
     },
     "PubSubnetAz1": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "VpcId": {
@@ -348,7 +294,6 @@
       }
     },
     "PubSubnetAz2": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::Subnet",
       "Properties": {
         "VpcId": {
@@ -394,7 +339,6 @@
       }
     },
     "InternetGateway": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::InternetGateway",
       "Metadata": {
         "AWS::CloudFormation::Designer": {
@@ -403,7 +347,6 @@
       }
     },
     "AttachGateway": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::VPCGatewayAttachment",
       "Properties": {
         "VpcId": {
@@ -420,7 +363,6 @@
       }
     },
     "RouteViaIgw": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::RouteTable",
       "Properties": {
         "VpcId": {
@@ -434,7 +376,6 @@
       }
     },
     "PublicRouteViaIgw": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::Route",
       "DependsOn": "AttachGateway",
       "Properties": {
@@ -453,7 +394,6 @@
       }
     },
     "PubSubnet1RouteTableAssociation": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
@@ -470,7 +410,6 @@
       }
     },
     "PubSubnet2RouteTableAssociation": {
-      "Condition": "CreateVpcResources",
       "Type": "AWS::EC2::SubnetRouteTableAssociation",
       "Properties": {
         "SubnetId": {
@@ -491,15 +430,7 @@
       "Properties": {
         "GroupDescription": "ELB Allowed Ports",
         "VpcId": {
-          "Fn::If": [
-            "CreateVpcResources",
-            {
-              "Ref": "Vpc"
-            },
-            {
-              "Ref": "VpcId"
-            }
-          ]
+          "Ref": "Vpc"
         },
         "SecurityGroupIngress": [
           {
@@ -527,57 +458,30 @@
       "Properties": {
         "GroupDescription": "ECS Allowed Ports",
         "VpcId": {
-          "Fn::If": [
-            "CreateVpcResources",
-            {
-              "Ref": "Vpc"
-            },
-            {
-              "Ref": "VpcId"
-            }
-          ]
+          "Ref": "Vpc"
         },
-        "SecurityGroupIngress": {
-          "Fn::If": [
-            "CreateELB",
-            [
-              {
-                "IpProtocol": "tcp",
-                "FromPort": {
-                  "Ref": "EcsPort"
-                },
-                "ToPort": {
-                  "Ref": "EcsPort"
-                },
-                "CidrIp": {
-                  "Ref": "SourceCidr"
-                }
-              },
-              {
-                "IpProtocol": "tcp",
-                "FromPort": "1",
-                "ToPort": "65535",
-                "SourceSecurityGroupId": {
-                  "Ref": "ElbSecurityGroup"
-                }
-              }
-            ],
-            [
-              {
-                "IpProtocol": "tcp",
-                "FromPort": {
-                  "Ref": "EcsPort"
-                },
-                "ToPort": {
-                  "Ref": "EcsPort"
-                },
-                "CidrIp": {
-                  "Ref": "SourceCidr"
-                }
-              }
-            ]
-          ]
-        }
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": {
+              "Ref": "EcsPort"
+            },
+            "ToPort": {
+              "Ref": "EcsPort"
+            },
+            "CidrIp": {
+              "Ref": "SourceCidr"
+            }
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "1",
+            "ToPort": "65535",
+            "SourceSecurityGroupId": {
+              "Ref": "ElbSecurityGroup"
+            }
+          }
+        ]
       },
       "Metadata": {
         "AWS::CloudFormation::Designer": {
@@ -586,7 +490,6 @@
       }
     },
     "EcsElasticLoadBalancer": {
-      "Condition": "CreateELBForNewVpc",
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
       "Properties": {
         "SecurityGroups": [
@@ -632,48 +535,6 @@
         }
       }
     },
-    "EcsElasticLoadBalancerExistingVpc": {
-      "Condition": "CreateELBForExistingVpc",
-      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-      "Properties": {
-        "SecurityGroups": [
-          {
-            "Ref": "ElbSecurityGroup"
-          }
-        ],
-        "Subnets": {
-          "Ref": "SubnetIds"
-        },
-        "CrossZone": "true",
-        "Listeners": [
-          {
-            "LoadBalancerPort": {
-              "Ref": "ElbPort"
-            },
-            "InstancePort": {
-              "Ref": "EcsPort"
-            },
-            "Protocol": {
-              "Ref": "ElbProtocol"
-            }
-          }
-        ],
-        "HealthCheck": {
-          "Target": {
-            "Ref": "ElbHealthCheckTarget"
-          },
-          "HealthyThreshold": "2",
-          "UnhealthyThreshold": "10",
-          "Interval": "30",
-          "Timeout": "5"
-        }
-      },
-      "Metadata": {
-        "AWS::CloudFormation::Designer": {
-          "id": "6d763e09-3c31-42b8-82b9-fb5570d863c4"
-        }
-      }
-    },
     "EcsInstanceLc": {
       "Condition": "CreateEC2LCWithKeyPair",
       "Type": "AWS::AutoScaling::LaunchConfiguration",
@@ -697,44 +558,25 @@
           }
         ],
         "UserData": {
-          "Fn::If": [
-            "SetEndpointToECSAgent",
-            {
-              "Fn::Base64": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "#!/bin/bash\n",
-                    "echo ECS_CLUSTER=",
-                    {
-                      "Ref": "EcsCluster"
-                    },
-                    " >> /etc/ecs/ecs.config",
-                    "\necho ECS_BACKEND_HOST=",
-                    {
-                      "Ref": "EcsEndpoint"
-                    },
-                    " >> /etc/ecs/ecs.config"
-                  ]
-                ]
-              }
-            },
-            {
-              "Fn::Base64": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "#!/bin/bash\n",
-                    "echo ECS_CLUSTER=",
-                    {
-                      "Ref": "EcsCluster"
-                    },
-                    " >> /etc/ecs/ecs.config"
-                  ]
-                ]
-              }
-            }
-          ]
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash\n",
+                "echo ECS_CLUSTER=",
+                {
+                  "Ref": "EcsCluster"
+                },
+                " >> /etc/ecs/ecs.config\n",
+                "yum install -y aws-cli\n",
+                "aws s3 cp s3://",
+                {
+                  "Ref": "SecretsBucket"
+                },
+                "/ecs.config /etc/ecs/ecs.config\n"
+              ]
+            ]
+          }
         }
       },
       "Metadata": {
@@ -763,44 +605,25 @@
           }
         ],
         "UserData": {
-          "Fn::If": [
-            "SetEndpointToECSAgent",
-            {
-              "Fn::Base64": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "#!/bin/bash\n",
-                    "echo ECS_CLUSTER=",
-                    {
-                      "Ref": "EcsCluster"
-                    },
-                    " >> /etc/ecs/ecs.config",
-                    "\necho ECS_BACKEND_HOST=",
-                    {
-                      "Ref": "EcsEndpoint"
-                    },
-                    " >> /etc/ecs/ecs.config"
-                  ]
-                ]
-              }
-            },
-            {
-              "Fn::Base64": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "#!/bin/bash\n",
-                    "echo ECS_CLUSTER=",
-                    {
-                      "Ref": "EcsCluster"
-                    },
-                    " >> /etc/ecs/ecs.config"
-                  ]
-                ]
-              }
-            }
-          ]
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash\n",
+                "echo ECS_CLUSTER=",
+                {
+                  "Ref": "EcsCluster"
+                },
+                " >> /etc/ecs/ecs.config\n",
+                "yum install -y aws-cli\n",
+                "aws s3 cp s3://",
+                {
+                  "Ref": "SecretsBucket"
+                },
+                "/ecs.config /etc/ecs/ecs.config\n"
+              ]
+            ]
+          }
         }
       },
       "Metadata": {
@@ -812,29 +635,21 @@
     "EcsInstanceAsg": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
       "Properties": {
-        "VPCZoneIdentifier": {
-          "Fn::If": [
-            "CreateVpcResources",
-            [
-              {
-                "Fn::Join": [
-                  ",",
-                  [
-                    {
-                      "Ref": "PubSubnetAz1"
-                    },
-                    {
-                      "Ref": "PubSubnetAz2"
-                    }
-                  ]
-                ]
-              }
-            ],
-            {
-              "Ref": "SubnetIds"
-            }
-          ]
-        },
+        "VPCZoneIdentifier": [
+          {
+            "Fn::Join": [
+              ",",
+              [
+                {
+                  "Ref": "PubSubnetAz1"
+                },
+                {
+                  "Ref": "PubSubnetAz2"
+                }
+              ]
+            ]
+          }
+        ],
         "LaunchConfigurationName": {
           "Fn::If": [
             "CreateEC2LCWithKeyPair",
@@ -888,21 +703,7 @@
     "EcsElbName": {
       "Description": "Load Balancer for ECS Service",
       "Value": {
-        "Fn::If": [
-          "CreateELB",
-          {
-            "Fn::If": [
-              "CreateELBForNewVpc",
-              {
-                "Ref": "EcsElasticLoadBalancer"
-              },
-              {
-                "Ref": "EcsElasticLoadBalancerExistingVpc"
-              }
-            ]
-          },
-          ""
-        ]
+        "Ref": "EcsElasticLoadBalancer"
       }
     }
   },
