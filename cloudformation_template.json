@@ -51,9 +51,13 @@
     }
   },
   "Parameters": {
-    "SecretsBucket": {
+    "DockerEmail": {
       "Type": "String",
-      "Description": "Specify bucket name, that contains ecs.config and other secrets files."
+      "Description": "The email to your docker account"
+    },
+    "DockerAuthToken": {
+      "Type": "String",
+      "Description": "The secret auth token found in ~/.docker/config.json after running docker login."
     },
     "EcsAmiId": {
       "Type": "String",
@@ -115,30 +119,10 @@
       "Default": "ecsInstanceRole",
       "Description": "Name or the Amazon Resource Name (ARN) of the instance profile associated with the IAM role for the instance"
     },
-    "EcsPort": {
+    "IamRoleServiceProfile": {
       "Type": "String",
-      "Description": "Optional - Security Group port to open on ECS instances - defaults to port 80",
-      "Default": "80"
-    },
-    "ElbPort": {
-      "Type": "String",
-      "Description": "Optional - Security Group port to open on ELB - port 80 will be open by default",
-      "Default": "80"
-    },
-    "ElbProtocol": {
-      "Type": "String",
-      "Description": "Optional - ELB Protocol - defaults to HTTP",
-      "Default": "HTTP"
-    },
-    "ElbHealthCheckTarget": {
-      "Type": "String",
-      "Description": "Optional - Health Check Target for ELB - defaults to HTTP:80/",
-      "Default": "HTTP:80/"
-    },
-    "SourceCidr": {
-      "Type": "String",
-      "Description": "Optional - CIDR/IP range for EcsPort and ElbPort - defaults to 0.0.0.0/0",
-      "Default": "0.0.0.0/0"
+      "Default": "ecsServiceRole",
+      "Description": "Name or the Amazon Resource Name (ARN) of the service profile associated with the IAM role for service management"
     },
     "VpcAvailabilityZones": {
       "Type": "CommaDelimitedList",
@@ -189,7 +173,7 @@
     "EcsCluster": {
       "Type": "AWS::ECS::Cluster"
     },
-    "TaskDefinitions": {
+    "EcsTaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Properties": {
         "ContainerDefinitions": [
@@ -225,8 +209,34 @@
         ]
       }
     },
-
-
+    "EcsService": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "Cluster": {
+          "Ref": "EcsCluster"
+        },
+        "DeploymentConfiguration": {
+          "MinimumHealthyPercent": 100,
+          "MaximumPercent": 200
+        },
+        "DesiredCount": 2,
+        "LoadBalancers": [
+          {
+            "ContainerName": "nginx",
+            "ContainerPort": 80,
+            "LoadBalancerName": {
+              "Ref": "EcsElasticLoadBalancer"
+            }
+          }
+        ],
+        "Role": {
+          "Ref": "IamRoleServiceProfile"
+        },
+        "TaskDefinition": {
+          "Ref": "EcsTaskDefinition"
+        }
+      }
+    },
     "Vpc": {
       "Type": "AWS::EC2::VPC",
       "Properties": {
@@ -435,15 +445,9 @@
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp",
-            "FromPort": {
-              "Ref": "ElbPort"
-            },
-            "ToPort": {
-              "Ref": "ElbPort"
-            },
-            "CidrIp": {
-              "Ref": "SourceCidr"
-            }
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
           }
         ]
       },
@@ -463,15 +467,15 @@
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp",
-            "FromPort": {
-              "Ref": "EcsPort"
-            },
-            "ToPort": {
-              "Ref": "EcsPort"
-            },
-            "CidrIp": {
-              "Ref": "SourceCidr"
-            }
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "80",
+            "ToPort": "80",
+            "CidrIp": "0.0.0.0/0"
           },
           {
             "IpProtocol": "tcp",
@@ -508,21 +512,13 @@
         "CrossZone": "true",
         "Listeners": [
           {
-            "LoadBalancerPort": {
-              "Ref": "ElbPort"
-            },
-            "InstancePort": {
-              "Ref": "EcsPort"
-            },
-            "Protocol": {
-              "Ref": "ElbProtocol"
-            }
+            "LoadBalancerPort": "80",
+            "InstancePort": "80",
+            "Protocol": "HTTP"
           }
         ],
         "HealthCheck": {
-          "Target": {
-            "Ref": "ElbHealthCheckTarget"
-          },
+          "Target": "HTTP:80/",
           "HealthyThreshold": "2",
           "UnhealthyThreshold": "10",
           "Interval": "30",
@@ -568,12 +564,17 @@
                   "Ref": "EcsCluster"
                 },
                 " >> /etc/ecs/ecs.config\n",
-                "yum install -y aws-cli\n",
-                "aws s3 cp s3://",
+                "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
+                "echo ECS_ENGINE_AUTH_DATA={\"https://index.docker.io/v1/\":{\"auth\":\"",
                 {
-                  "Ref": "SecretsBucket"
+                  "Ref": "DockerAuthToken"
                 },
-                "/ecs.config /etc/ecs/ecs.config\n"
+                "\",\"email\":\"",
+                {
+                  "Ref": "DockerEmail"
+                },
+                "\"}}",
+                " >> /etc/ecs/ecs.config\n"
               ]
             ]
           }
@@ -615,12 +616,17 @@
                   "Ref": "EcsCluster"
                 },
                 " >> /etc/ecs/ecs.config\n",
-                "yum install -y aws-cli\n",
-                "aws s3 cp s3://",
+                "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
+                "echo ECS_ENGINE_AUTH_DATA={\"https://index.docker.io/v1/\":{\"auth\":\"",
                 {
-                  "Ref": "SecretsBucket"
+                  "Ref": "DockerAuthToken"
                 },
-                "/ecs.config /etc/ecs/ecs.config\n"
+                "\",\"email\":\"",
+                {
+                  "Ref": "DockerEmail"
+                },
+                "\"}}",
+                " >> /etc/ecs/ecs.config\n"
               ]
             ]
           }
