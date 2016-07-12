@@ -130,6 +130,15 @@ Before we continue here, we'll set up Docker Hub.
   users
   
 This is btw how we will later deal with secret server settings as well.
+
+
+## ECS
+
+* I found it easiest to just run the EC2 Container Service "first run" wizard
+  once. It will setup instance and service roles for you and show you how a
+  running cluster would look like
+* Afterwards you can delete the cluster again by clicking the X on the cluster
+  on the ECS dashboard
   
 
 ## Provisioning with CloudFormation
