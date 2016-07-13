@@ -17,9 +17,12 @@ cluster_name="myproject-EcsCluster-2UV2SK2QHSFE"
 service_name="myproject-EcsService-1EMF7GAO9Q3FF"
 task_name="myproject-EcsTaskDefinition-1EANXEO6KRI93"
 if [-z "$DOCKER_USER"]; then
-    DOCKER_PASS=$(cat ../docker.json | $JQ ".[0].pass")
-    DOCKER_USER=$(cat ../docker.json | $JQ ".[0].user")
-    DOCKER_EMAIL=$(cat ../docker.json | $JQ ".[0].email")
+    # this was basically just meant to be a simplification to work locally
+    # but if you're into storing credentials in a json file locally, you cen
+    # of course use it too
+    DOCKER_PASS=$(cat ../dockerauth.json | $JQ ".[0].pass")
+    DOCKER_USER=$(cat ../dockerauth.json | $JQ ".[0].user")
+    DOCKER_EMAIL=$(cat ../dockerauth.json | $JQ ".[0].email")
 fi;
 
 deploy_image() {
