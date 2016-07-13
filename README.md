@@ -84,54 +84,6 @@ Before we continue here, we'll set up Docker Hub.
     * what the `deploy.sh` should do at this stage is build the docker image
       and push it to the docker hub.
 
-
-## Preparing secret settings
-
-* Go to Amazon IAM > Roles > ecsInstanceRole (that's the one ECS just created)
-* Click on "Create Role Policy" > Custom Policy
-* Add the following code and replace the BUCKETNAME with something secret  
-  (we're about to create that bucket in a second)
-  
-  
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-          {
-              "Action": [
-                  "s3:GetObject"
-              ],
-              "Sid": "Stmt0123456789",
-              "Resource": [
-                  "arn:aws:s3:::BUCKETNAME/ecs.config",
-                  "arn:aws:s3:::BUCKETNAME/server_settings.py.myproject"
-              ],
-              "Effect": "Allow"
-          }
-      ]
-    }
-    
-* Locally create the file ecs.config and add
-
-
-    ECS_ENGINE_AUTH_TYPE=dockercfg
-    ECS_ENGINE_AUTH_DATA={"https://index.docker.io/v1/":{"auth":"AUTH_TOKEN","email":"DOCKER_EMAIl"}}
-    
-* Obviously you want to enter your docker email instead of `DOCKER_EMAIL`
-* The `AUTH_TOKEN` you can aquire by typing `docker login` and entering your
-  username and password. It then outputs a path, where the credentials are
-  saved along with the token.
-* Install `awscli` (AWS Command Line Interface) if you haven't already
-    * run `aws configure` and enter the required information
-    * see here for details http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-using-examples
-* Go to Amazon S3
-* Create a new bucket named `BUCKETNAME`
-* Run `aws s3 cp ecs.config s3://BUCKETNAME/ecs.config`
-* This will by default create a file, that is only accessible by authenticated
-  users
-  
-This is btw how we will later deal with secret server settings as well.
-
-
 ## ECS
 
 * I found it easiest to just run the EC2 Container Service "first run" wizard
@@ -160,21 +112,99 @@ This is btw how we will later deal with secret server settings as well.
   you can review your cluster running 
   
 
+## Alternative CloudFormation way
+
+* Create a json file with your docker auth token and email:
+
+
+    [{
+        "ParameterKey": "DockerAuthToken",
+        "ParameterValue": "sometoken"
+    },
+    {
+        "ParameterKey": "DockerEmail",
+        "ParameterValue": "mail@example.com"
+    }]
+
+* Install `awscli` (AWS Command Line Interface) if you haven't already
+    * run `aws configure` and enter the required information
+    * see here for details http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-using-examples
+* Enter the following command:
+
+
+    aws cloudformation create-stack --stack-name myproject --template-body file:://path/to/my/cloudformation_template.json --parameters file://path/to/my/docker.json
+    
+* The files can also be urls. However if you privide a url to the template body
+  file, you need to use `--template-url` instead.
+* Open the CloudFormation console to watch the stack be created.
+
+
 ## Deploy issues
 
-I had the problem, that once there are 2 running tasks and the script updates
-them, they get stuck and the deploy script returns "Waiting for stale
-deployments" and will eventually time out.
-A way to work around this is to stop the running tasks right after the script
-has pushed to the docker hub and then it can re-deploy the new ones.
-Sometimes you need to repeatedly stop the tasks in order for it to work.
+1. The CF stack gets stuck on deploying the service's tasks and triggers a
+   rollback. This is because the containers don't run properly
 
-This is obviously not, what a deployment should look like.
-According to the docs, the container service should re-deploy one container
-after the other.
+2. I had the problem, that once there are 2 running tasks and the script updates
+   them, they get stuck and the deploy script returns "Waiting for stale
+   deployments" and will eventually time out.
+   A way to work around this is to stop the running tasks right after the script
+   has pushed to the docker hub and then it can re-deploy the new ones.
+   Sometimes you need to repeatedly stop the tasks in order for it to work.
+
+   This is obviously not, what a deployment should look like.
+   According to the docs, the container service should re-deploy one container
+   after the other.
 
 **WIP**
 
+
+## Preparing secret settings
+
+This section needs to be revised. It was formerly a provisioning step, but now
+has become obsolete due to CF templates.
+It will however be necessary for secret setting still.
+
+* Go to Amazon IAM > Roles > ecsInstanceRole (that's the one ECS has created)
+* Click on "Create Role Policy" > Custom Policy
+* Add the following code and replace the BUCKETNAME with something secret  
+  (we're about to create that bucket in a second)
+  
+  
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Action": [
+                  "s3:GetObject"
+              ],
+              "Sid": "Stmt0123456789",
+              "Resource": [
+                  "arn:aws:s3:::BUCKETNAME/server_settings.py.myproject"
+              ],
+              "Effect": "Allow"
+          }
+      ]
+    }
+    
+* Locally create the file ecs.config and add
+
+
+    ECS_ENGINE_AUTH_TYPE=dockercfg
+    ECS_ENGINE_AUTH_DATA={"https://index.docker.io/v1/":{"auth":"AUTH_TOKEN","email":"DOCKER_EMAIl"}}
+    
+* Obviously you want to enter your docker email instead of `DOCKER_EMAIL`
+* The `AUTH_TOKEN` you can aquire by typing `docker login` and entering your
+  username and password. It then outputs a path, where the credentials are
+  saved along with the token.
+* Install `awscli` (AWS Command Line Interface) if you haven't already
+    * run `aws configure` and enter the required information
+    * see here for details http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-using-examples
+* Go to Amazon S3
+* Create a new bucket named `BUCKETNAME`
+* Run `aws s3 cp ecs.config s3://BUCKETNAME/ecs.config`
+* This will by default create a file, that is only accessible by authenticated
+  users
+  
 
 # Notes and TODOs
 
