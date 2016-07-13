@@ -187,9 +187,6 @@
                 "HostPort": "80"
               }
             ],
-            "Command": [
-              "nginx -g \"daemon off;\""
-            ],
             "Memory": "128",
             "Essential": "true"
           },
@@ -565,15 +562,15 @@
                 },
                 " >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_DATA={\"https://index.docker.io/v1/\":{\"auth\":\"",
+                "echo ECS_ENGINE_AUTH_DATA={'https://index.docker.io/v1/':{'auth':'",
                 {
                   "Ref": "DockerAuthToken"
                 },
-                "\",\"email\":\"",
+                "','email':'",
                 {
                   "Ref": "DockerEmail"
                 },
-                "\"}}",
+                "'}}",
                 " >> /etc/ecs/ecs.config\n"
               ]
             ]
@@ -617,15 +614,15 @@
                 },
                 " >> /etc/ecs/ecs.config\n",
                 "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_DATA={\"https://index.docker.io/v1/\":{\"auth\":\"",
+                "echo ECS_ENGINE_AUTH_DATA={'https://index.docker.io/v1/':{'auth':'",
                 {
                   "Ref": "DockerAuthToken"
                 },
-                "\",\"email\":\"",
+                "','email':'",
                 {
                   "Ref": "DockerEmail"
                 },
-                "\"}}",
+                "'}}",
                 " >> /etc/ecs/ecs.config\n"
               ]
             ]
