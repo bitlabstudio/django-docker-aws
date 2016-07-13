@@ -189,19 +189,6 @@
             ],
             "Memory": "128",
             "Essential": "true"
-          },
-          {
-            "Name": "web",
-            "Image": "bitmazk/myproject:latest",
-            "Cpu": "10",
-            "PortMappings": [
-              {
-                "ContainerPort": "8000",
-                "HostPort": "8000"
-              }
-            ],
-            "Memory": "256",
-            "Essential": "true"
           }
         ]
       }
@@ -216,7 +203,9 @@
           "MinimumHealthyPercent": 100,
           "MaximumPercent": 200
         },
-        "DesiredCount": 2,
+        "DesiredCount": {
+          "Ref": "AsgMaxSize"
+        },
         "LoadBalancers": [
           {
             "ContainerName": "nginx",

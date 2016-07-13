@@ -11,6 +11,15 @@ PROJECT_NAME="myproject"
 # more bash-friendly output for jq
 JQ="jq --raw-output --exit-status"
 
+
+
+cluster_name="myproject-EcsCluster-2UV2SK2QHSFE"
+service_name="myproject-EcsService-1EMF7GAO9Q3FF"
+task_name="myproject-EcsTaskDefinition-1EANXEO6KRI93"
+DOCKER_PASS=$(cat ../docker.json | $JQ ".[0].pass"
+DOCKER_USER=$(cat ../docker.json | $JQ ".[0].user"
+DOCKER_EMAIL=$(cat ../docker.json | $JQ ".[0].email"
+
 deploy_image() {
 
     # this copies the secret settings from our private bucket into the build folder for the docker file to find
@@ -31,21 +40,21 @@ deploy_image() {
 # reads $CIRCLE_SHA1
 # sets $task_def
 make_task_def() {
+#	{
+#	    "name": "web",
+#	    "image": "%s/%s:%s",
+#	    "portMappings": [
+#            {
+#                "containerPort": 8000,
+#                "hostPort": 8000
+#            }
+#	    ],
+#	    "cpu": 256,
+#	    "memory": 300,
+#	    "essential": true
+#	},
 
     task_template='[
-	{
-	    "name": "web",
-	    "image": "%s/%s:%s",
-	    "portMappings": [
-            {
-                "containerPort": 8000,
-                "hostPort": 8000
-            }
-	    ],
-	    "cpu": 256,
-	    "memory": 300,
-	    "essential": true
-	},
 	{
 	    "name": "nginx",
 	    "image": "nginx",
@@ -65,11 +74,11 @@ make_task_def() {
 
 }
 
-# reads $family
+# reads $task_name
 # sets $revision
 register_definition() {
 
-    if revision=$(aws ecs register-task-definition --container-definitions "$task_def" --family $family | $JQ '.taskDefinition.taskDefinitionArn'); then
+    if revision=$(aws ecs register-task-definition --container-definitions "$task_def" --family "$task_name" | $JQ '.taskDefinition.taskDefinitionArn'); then
         echo "Revision: $revision"
     else
         echo "Failed to register task definition"
@@ -80,11 +89,9 @@ register_definition() {
 
 deploy_cluster() {
 
-    family="$PROJECT_NAME-task"
-
     make_task_def
     register_definition
-    if [[ $(aws ecs update-service --cluster $PROJECT_NAME --service $PROJECT_NAME-service --task-definition $revision | \
+    if [[ $(aws ecs update-service --cluster "$cluster_name" --service "$service_name" --task-definition $revision | \
                    $JQ '.service.taskDefinition') != $revision ]]; then
         echo "Error updating service."
         return 1
@@ -93,7 +100,7 @@ deploy_cluster() {
     # wait for older revisions to disappear
     # not really necessary, but nice for demos
     for attempt in {1..30}; do
-        if stale=$(aws ecs describe-services --cluster $PROJECT_NAME --services $PROJECT_NAME-service | \
+        if stale=$(aws ecs describe-services --cluster "$cluster_name" --services "$service_name" | \
                        $JQ ".services[0].deployments | .[] | select(.taskDefinition != \"$revision\") | .taskDefinition"); then
             echo "Waiting for stale deployments:"
             echo "$stale"
