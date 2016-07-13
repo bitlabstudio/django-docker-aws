@@ -16,7 +16,7 @@ JQ="jq --raw-output --exit-status"
 cluster_name="myproject-EcsCluster-2UV2SK2QHSFE"
 service_name="myproject-EcsService-1EMF7GAO9Q3FF"
 task_name="myproject-EcsTaskDefinition-1EANXEO6KRI93"
-if [-z "$DOCKER_USER"]; then
+if [ -z "$DOCKER_USER" ]; then
     # this was basically just meant to be a simplification to work locally
     # but if you're into storing credentials in a json file locally, you cen
     # of course use it too
