@@ -1,0 +1,12 @@
+[
+    {
+        "dockerauth": "sometokensometokensometoken",
+        "dockerpass": "yourdockerpassword",
+        "dockeruser": "username",
+        "dockeremail": "info@example.com",
+        "containername": "djangodockeraws_web",
+        "clustername": "myproject-EcsCluster-SOMETHING",
+        "servicename": "myproject-EcsService-SOMETHING",
+        "taskname": "myproject-EcsTaskDefinition-SOMETHING"
+    }
+]

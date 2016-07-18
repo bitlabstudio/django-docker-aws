@@ -200,8 +200,8 @@
           "Ref": "EcsCluster"
         },
         "DeploymentConfiguration": {
-          "MinimumHealthyPercent": 100,
-          "MaximumPercent": 200
+          "MinimumHealthyPercent": 50,
+          "MaximumPercent": 100
         },
         "DesiredCount": {
           "Ref": "AsgMaxSize"

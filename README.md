@@ -2,43 +2,59 @@
 
 This is WIP. Not intended to be used in the wild, yet.
 
+If you stumble across this and can't get it to work or have questions, please
+open an issue.
+I will try to create a extensive guide on how all of the components are set up
+in the future.
+
 This project aims to aid in researching an AWS infrastructure including:
 
 * Running a scalable cluster on ECS/EC2 with Django/uwsgi/nginx
-* S3 and and Postgres on RDS for file and data storage needs
+* S3 file storage
+* Postgres on RDS
 * Elasticache for Memcached
 * CircleCI for testing and building
 * Docker and Docker Hub for containerizing and storing builds
 * Celery, RabbitMQ and Redis for running tasks
-* A yet undefined thumbnailing service
+* A yet undefined automatic thumbnailing service
 * A service, that triggers certain commands once per deployment
 
-At first I intended to write the setup steps below only for setting up THIS
-particular project, but I figured, that the problems, I faced lied in upgrading
-a different existing project to this stack, so I'll go over all of the steps
-required and leave it up to you to skip, what you don't need.
+Note: I will go over all the setup steps very briefly and I'll assume, that you
+are kind of familiar with docker to write dockerfiles and compose files on your
+own. Also it helps to know how circleci or similar CI services are set up.
+The referenced files however can obviously looked up inside this repo. They
+won't fit all purposes, but might be a good starting point.
 
-The referenced files can obviously looked up inside this repo. They won't fit
-all purposes, but might be a good starting point.
+If you use this repo as starting point/boilerplate or to try it out, this guide
+should probably provide enough information to get everything running, even if
+you don't know all that stuff I mentioned.
 
 For this guide I assume, that you have accounts on:
 
 * AWS
 * circleci.com
 * hub.docker.com
-* github.com (bitbucket.com will work, too)
+* github.com (bitbucket.com should work, too)
 
 
 # Setting up the project
 
+If you don't just clone this repo, you will need some kind of minimal django
+project, that you now want to move to AWS.
+Minimal means, that you can run `./manage.py runserver` locally and get some
+positive response. Be it a CMS page or just some `TemplateView`. Anything
+that will render something on the home page.
+
+
 ## Starting from an empty project you need to...
+
+(you don't need this, if you use this example project, but it might be worth
+to take a look)
 
 * Add docker files: `Dockerfile`, `docker-compose.yml`
 * Add config files: `nginx.conf`, `uwsgi.ini`, `server_settings.py.myproject`
 * Add CI config: `circle.yml`
 * Add deploy script for CI: `deploy.sh`
-
-I might add guides to set them up later.
 
 
 ## Once the project is ready
@@ -58,7 +74,11 @@ I might add guides to set them up later.
 ## Continuous Integration
 
 * Log in to circleci.com and link your github account
-* Go to "ADD PROJECTS" and find the project, you'd like to build and click "Build project"
+* Go to "ADD PROJECTS" and find the project, you'd like to build and click
+  "Build project"
+  
+The next steps only apply to a new, empty project
+  
 * The first build will probably do nothing but run 0 tests, which results in a
   successful build
 * Now add a `circle.yml` that actually does stuff and some tests, if you don't
@@ -80,20 +100,21 @@ Before we continue here, we'll set up Docker Hub.
   `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION`
     * look up AWS availability zones or use something like `ap-southeast-1` for
       Singapore. It doesn't really matter, if you just want to test
-* Add a `deploy.sh` and add that to the `cirlce.yml`
+* Add a `deploy.sh` and add its execution to the `cirlce.yml`
     * what the `deploy.sh` should do at this stage is build the docker image
-      and push it to the docker hub.
+      and push it to the docker hub. Check `deploy.sh` and `circle.yml`. The
+      `deploy.sh` is largely how circleci provides it.
+      
 
-## ECS
+## IAM
 
-* I found it easiest to just run the EC2 Container Service "first run" wizard
-  once. It will setup instance and service roles for you and show you how a
-  running cluster would look like
-* Afterwards you can delete the cluster again by clicking the X on the cluster
-  on the ECS dashboard
-  
+* Create an IAM role `ecsInstanceRole` with the permission policy
+  `AmazonEC@ContainerServiceEC2Role`
+* And another one named `ecsServiceRole` with the permission policy
+  `AmazonEC2ContainerServiceRole`
 
-## Provisioning with CloudFormation
+
+## Provisioning with CloudFormation (skip if you prefer CLI)
 
 * Add CloudFormation template to your project
     * you can download the ECS default template and go from there or take the
@@ -112,9 +133,9 @@ Before we continue here, we'll set up Docker Hub.
   you can review your cluster running 
   
 
-## Alternative CloudFormation way
+## Alternative CloudFormation way using CLI
 
-* Create a json file with your docker auth token and email:
+* Create a json file `docker.json` with your docker auth token and email:
 
 
     [{
@@ -126,6 +147,7 @@ Before we continue here, we'll set up Docker Hub.
         "ParameterValue": "mail@example.com"
     }]
 
+* This file should not live inside version control!
 * Install `awscli` (AWS Command Line Interface) if you haven't already
     * run `aws configure` and enter the required information
     * see here for details http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-using-examples
@@ -134,7 +156,7 @@ Before we continue here, we'll set up Docker Hub.
 
     aws cloudformation create-stack --stack-name myproject --template-body file:://path/to/my/cloudformation_template.json --parameters file://path/to/my/docker.json
     
-* The files can also be urls. However if you privide a url to the template body
+* The files can also be urls. However if you provide a url to the template body
   file, you need to use `--template-url` instead.
 * Open the CloudFormation console to watch the stack be created.
 
@@ -142,18 +164,9 @@ Before we continue here, we'll set up Docker Hub.
 ## Deploy issues
 
 1. The CF stack gets stuck on deploying the service's tasks and triggers a
-   rollback. This is because the containers don't run properly
+   rollback. This is because the containers don't run properly.
+   ATM the uwsgi/gunicorn setup isn't running correctly.
 
-2. I had the problem, that once there are 2 running tasks and the script updates
-   them, they get stuck and the deploy script returns "Waiting for stale
-   deployments" and will eventually time out.
-   A way to work around this is to stop the running tasks right after the script
-   has pushed to the docker hub and then it can re-deploy the new ones.
-   Sometimes you need to repeatedly stop the tasks in order for it to work.
-
-   This is obviously not, what a deployment should look like.
-   According to the docs, the container service should re-deploy one container
-   after the other.
 
 **WIP**
 
