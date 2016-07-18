@@ -71,6 +71,11 @@ make_task_def() {
                 "hostPort": 80
             }
 	    ],
+	    "volumesFrom": [
+	        {
+	            "sourceContainer": "web"
+	        }
+	    ],
 	    "cpu": 256,
 	    "memory": 128,
 	    "essential": true
@@ -121,5 +126,5 @@ deploy_cluster() {
     return 1
 }
 
-deploy_image
+#deploy_image
 deploy_cluster

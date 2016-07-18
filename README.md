@@ -108,10 +108,50 @@ Before we continue here, we'll set up Docker Hub.
 
 ## IAM
 
-* Create an IAM role `ecsInstanceRole` with the permission policy
-  `AmazonEC@ContainerServiceEC2Role`
-* And another one named `ecsServiceRole` with the permission policy
+* Create an IAM role named `ecsServiceRole` with the permission policy
   `AmazonEC2ContainerServiceRole`
+* Create an IAM role named `ecsInstanceRole` with the permission policy
+  `AmazonEC@ContainerServiceEC2Role`
+* Click on "Create Role Policy" > Custom Policy
+* Add the following code and replace the BUCKETNAME with something secret  
+  (we're about to create that bucket in a second)
+  
+  
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Action": [
+                  "s3:GetObject"
+              ],
+              "Sid": "Stmt0123456789",
+              "Resource": [
+                  "arn:aws:s3:::BUCKETNAME/server_settings.py.myproject",
+                  "arn:aws:s3:::BUCKETNAME/ecs.config",
+              ],
+              "Effect": "Allow"
+          }
+      ]
+    }
+    
+* Locally create the file ecs.config and add
+
+
+    ECS_ENGINE_AUTH_TYPE=dockercfg
+    ECS_ENGINE_AUTH_DATA={"https://index.docker.io/v1/":{"auth":"AUTH_TOKEN","email":"DOCKER_EMAIl"}}
+    
+* Obviously you want to enter your docker email instead of `DOCKER_EMAIL`
+* The `AUTH_TOKEN` you can aquire by typing `docker login` and entering your
+  username and password. It then outputs a path, where the credentials are
+  saved along with the token.
+* Install `awscli` (AWS Command Line Interface) if you haven't already
+    * run `aws configure` and enter the required information
+    * see here for details http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-using-examples
+* Go to Amazon S3
+* Create a new bucket named `BUCKETNAME`
+* Run `aws s3 cp ecs.config s3://BUCKETNAME/ecs.config`
+* This will by default create a file, that is only accessible by authenticated
+  users
 
 
 ## Provisioning with CloudFormation (skip if you prefer CLI)
@@ -168,57 +208,6 @@ Before we continue here, we'll set up Docker Hub.
    ATM the uwsgi/gunicorn setup isn't running correctly.
 
 
-**WIP**
-
-
-## Preparing secret settings
-
-This section needs to be revised. It was formerly a provisioning step, but now
-has become obsolete due to CF templates.
-It will however be necessary for secret setting still.
-
-* Go to Amazon IAM > Roles > ecsInstanceRole (that's the one ECS has created)
-* Click on "Create Role Policy" > Custom Policy
-* Add the following code and replace the BUCKETNAME with something secret  
-  (we're about to create that bucket in a second)
-  
-  
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-          {
-              "Action": [
-                  "s3:GetObject"
-              ],
-              "Sid": "Stmt0123456789",
-              "Resource": [
-                  "arn:aws:s3:::BUCKETNAME/server_settings.py.myproject"
-              ],
-              "Effect": "Allow"
-          }
-      ]
-    }
-    
-* Locally create the file ecs.config and add
-
-
-    ECS_ENGINE_AUTH_TYPE=dockercfg
-    ECS_ENGINE_AUTH_DATA={"https://index.docker.io/v1/":{"auth":"AUTH_TOKEN","email":"DOCKER_EMAIl"}}
-    
-* Obviously you want to enter your docker email instead of `DOCKER_EMAIL`
-* The `AUTH_TOKEN` you can aquire by typing `docker login` and entering your
-  username and password. It then outputs a path, where the credentials are
-  saved along with the token.
-* Install `awscli` (AWS Command Line Interface) if you haven't already
-    * run `aws configure` and enter the required information
-    * see here for details http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html#cli-using-examples
-* Go to Amazon S3
-* Create a new bucket named `BUCKETNAME`
-* Run `aws s3 cp ecs.config s3://BUCKETNAME/ecs.config`
-* This will by default create a file, that is only accessible by authenticated
-  users
-  
-
 # Notes and TODOs
 
 I use this section to just quickly note down some things, that I or you should
@@ -241,14 +230,3 @@ keep in mind.
       change the `uwsgi.ini`
 * I'm actually thinking about giving Amazon ECR a go. But I think it isn't
   available in all zones
-* I'm experiencing an issue, that after updating the launch configuration of a
-  cluster, afterwards there's a new cluster `default` where the new instances
-  are spawned in, leaving the original cluster empty.  
-  How to verify:
-  * spawn a new cluster `myproject` through the first run wizard
-  * go through the launch configuration setup (copy, add user data, copy again)
-  * once you have set the ASG to respawn 2 instances and they get to the 
-    initializing state, the second cluster appears.
-  * I assume, that it's an error with the CloudFormation template used by ECS.
-    `Parameters.EcsClusterName.Default` is `default`. Could it be, that it
-    falls back to this value?

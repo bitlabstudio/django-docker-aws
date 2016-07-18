@@ -178,6 +178,19 @@
       "Properties": {
         "ContainerDefinitions": [
           {
+            "Name": "web",
+            "Image": "bitmazk/myproject:latest",
+            "Cpu": "10",
+            "PortMappings": [
+              {
+                "ContainerPort": "8000",
+                "HostPort": "8000"
+              }
+            ],
+            "Memory": "256",
+            "Essential": "true"
+          },
+          {
             "Name": "nginx",
             "Image": "nginx",
             "Cpu": "10",
@@ -544,23 +557,16 @@
             "Fn::Join": [
               "",
               [
+
                 "#!/bin/bash\n",
+                "yum install -y aws-cli\n",
+                "aws s3 cp s3://myprojectsecrets/ecs.config /etc/ecs/ecs.config\n",
                 "echo ECS_CLUSTER=",
                 {
                   "Ref": "EcsCluster"
                 },
                 " >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_DATA={'https://index.docker.io/v1/':{'auth':'",
-                {
-                  "Ref": "DockerAuthToken"
-                },
-                "','email':'",
-                {
-                  "Ref": "DockerEmail"
-                },
-                "'}}",
-                " >> /etc/ecs/ecs.config\n"
+                "service docker restart"
               ]
             ]
           }
@@ -596,23 +602,16 @@
             "Fn::Join": [
               "",
               [
+
                 "#!/bin/bash\n",
+                "yum install -y aws-cli\n",
+                "aws s3 cp s3://myprojectsecret/ecs.config /etc/ecs/ecs.config\n",
                 "echo ECS_CLUSTER=",
                 {
                   "Ref": "EcsCluster"
                 },
                 " >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_TYPE=dockercfg >> /etc/ecs/ecs.config\n",
-                "echo ECS_ENGINE_AUTH_DATA={'https://index.docker.io/v1/':{'auth':'",
-                {
-                  "Ref": "DockerAuthToken"
-                },
-                "','email':'",
-                {
-                  "Ref": "DockerEmail"
-                },
-                "'}}",
-                " >> /etc/ecs/ecs.config\n"
+                "service docker restart"
               ]
             ]
           }
