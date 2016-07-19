@@ -12,7 +12,9 @@ JQ="jq --raw-output"
 
 # These variables usually get defined by circleci, if you want to run this
 # script locally though, you need to provide the projectvars.json file
+
 CONTAINER_NAME="djangodockeraws_web"
+# TODO this causes an error on circleci, that makes it skip this step, but locally it works and it looks as if the deployment would still work correctly
 if [ -z "${DOCKER_USER:''}" ]; then
     # this was basically just meant to be a simplification to work locally
     # but if you're into storing credentials in a json file locally, you cen
@@ -76,7 +78,7 @@ make_task_def() {
         ],
 	    "volumesFrom": [
 	        {
-	            "sourceContainer": "web"
+	            "sourceContainer": "web",
                 "readOnly": true
 	        }
 	    ],
