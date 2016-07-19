@@ -71,9 +71,13 @@ make_task_def() {
                 "hostPort": 80
             }
 	    ],
+        "links": [
+          "web"
+        ],
 	    "volumesFrom": [
 	        {
 	            "sourceContainer": "web"
+                "readOnly": true
 	        }
 	    ],
 	    "cpu": 256,

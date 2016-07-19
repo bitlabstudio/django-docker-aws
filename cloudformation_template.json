@@ -192,6 +192,15 @@
           },
           {
             "Name": "nginx",
+            "Links": [
+              "web"
+            ],
+            "VolumesFrom": [
+              {
+                "SourceContainer": "web",
+                "ReadOnly": true
+              }
+            ],
             "Image": "nginx",
             "Cpu": "10",
             "PortMappings": [
