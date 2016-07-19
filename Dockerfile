@@ -1,6 +1,9 @@
 # The main Dockerfile for our web container
 FROM python:2.7
 
+VOLUME /etc/nginx/conf.d/
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 COPY . /home/docker/code/
 
 WORKDIR /home/docker/code/
