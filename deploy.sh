@@ -32,7 +32,7 @@ fi;
 deploy_image() {
 
     # this copies the secret settings from our private bucket into the build folder for the docker file to find
-#    aws s3 cp s3://mysecretbucket/server_settings.py.$PROJECT_NAME ../server_settings.py --region ap-southeast-1
+    aws s3 cp s3://mysecretbucket/server_settings.py.$PROJECT_NAME ../server_settings.py --region ap-southeast-1
     docker-compose build web
     docker images
     docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS

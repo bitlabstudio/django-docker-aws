@@ -1,0 +1,36 @@
+import os
+
+ALLOWED_HOSTS = ['*']
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'myproject',
+        'USER': 'myproject',
+        'PASSWORD': 'myproject',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+
+# STATIC AND MEDIA SETTINGS
+# uncomment and add keys to add s3
+
+AWS_STORAGE_BUCKET_NAME = ''
+AWS_ACCESS_KEY_ID = ''
+AWS_SECRET_ACCESS_KEY = ''
+
+AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+MEDIA_ROOT = PROJECT_ROOT + '/../../assets/' + '/media'
+STATIC_ROOT = PROJECT_ROOT + '/../../assets/' + '/static/'
+STATICFILES_LOCATION = 'static'
+STATICFILES_STORAGE = 'myproject.custom_storages.StaticStorage'
+STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, STATICFILES_LOCATION)
+MEDIAFILES_LOCATION = 'media'
+MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
+DEFAULT_FILE_STORAGE = 'myproject.custom_storages.MediaStorage'
+THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
+COMPRESS_URL = MEDIA_URL

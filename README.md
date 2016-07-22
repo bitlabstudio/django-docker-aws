@@ -15,7 +15,7 @@ This project aims to aid in researching an AWS infrastructure including:
 * Elasticache for Memcached
 * CircleCI for testing and building
 * Docker and Docker Hub for containerizing and storing builds
-* Celery, RabbitMQ and Redis for running tasks
+* Celery and RabbitMQ for running tasks
 * A yet undefined automatic thumbnailing service
 * A service, that triggers certain commands once per deployment
 
@@ -201,11 +201,56 @@ Before we continue here, we'll set up Docker Hub.
 * Open the CloudFormation console to watch the stack be created.
 
 
-## Deploy issues
+## Static files
 
-1. The CF stack gets stuck on deploying the service's tasks and triggers a
-   rollback. This is because the containers don't run properly.
-   ATM the uwsgi/gunicorn setup isn't running correctly.
+* add a `custom_storages.py` file as you can see in this project under
+  `myproject/`
+  We need these classes so static and media files can reside in the same
+  bucket, but under different folders.
+* probably have set up a S3 bucket by now. If not go ahead and do so
+* create a `local_settings.py` file from `local_settings.py.sample`. This file
+  is not in version control
+* add AWS credentials and bucket name to the config and point to the storage
+  class in the `custom_storages` file you just added
+  *Note: You probably want to add a local storage or dev bucket here, because
+  you might not want to use the prod bucket in development, but for testing
+  it won't matter.*
+* you could now run `python manage.py collectstatic` and it should copy
+  your static files to S3.
+  Also if you have a filefield somewhere, all uploaded files should land inside
+  that bucket as well.
+* Since we want this to work on the server as well, we now want to create
+  secret server settings, that our CI will bake into our secret image of our
+  web container.
+* Create a `server_settings.py` file from `local_settings.py.sample`.
+  This file is also excluded from version control
+* Here you want to add the credentials and bucket name of your prod bucket,
+  that will be used by your servers.
+* Now remember your secret bucket name? You'll need that now:
+
+
+    aws s3 cp server_settings.py s3://secretbucketname/server_settings.py.myproject
+    
+* The deploy script will then pull this before CI builds the image so that
+  CI can copy it to the container image.
+
+## Issues
+
+1. When you use a CloudFront Change Set to scale the cluster, the service
+   returns to task revision 1.
+   I'm not sure how bad this problem is, since 1 holds the `latest` image
+   from our initial CF based provisioning, but this is obviously not how it's
+   supposed to be.
+   It should retain the task revision, that was on the service before the
+   change is triggered.
+2. While the deployment is running, ECS exchanges the containers with their new
+   versions. It does this 50% at a time. When the first batch of new containers
+   is deployed, there's a window of about 10 seconds, where there are new AND
+   old containers on the cluster and users might randomly end up on either of
+   them.
+   This could cause problems especially when altering data through forms.
+   User flows (ordering, paying, creating object, all kinds of wizards) could
+   get broken for a that time.
 
 
 # Notes and TODOs
