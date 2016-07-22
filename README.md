@@ -236,6 +236,21 @@ Before we continue here, we'll set up Docker Hub.
 * You will also need to add the secret bucket name to your CI environment
   variables as `BUCKET_NAME`
 * Push your code and watch it deploy
+* Go to ECS > Task Definitions
+* Create a Task Definiton
+* Name: "myproject-manage-py"
+* Add container
+* Name: "web"
+* Image: "MYDOCKERUSER/myproject"
+* Memory: 128
+* Command: "python,manage.py,collectstatic,--noinput"
+* Working directory: "/home/docker/code"
+* Create
+* Return to your cluster > Tasks
+* Run new task
+* Select the task, you just created and click Run Task
+* The task will run and execute collectstatic
+
 
 ## Issues
 
