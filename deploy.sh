@@ -24,6 +24,7 @@ if [ -z "${DOCKER_USER:''}" ]; then
     SERVICE_NAME="$(cat projectvars.json | $JQ ".[0].servicename")"
     TASK_NAME="$(cat projectvars.json | $JQ ".[0].taskname")"
     CONTAINER_NAME="$(cat projectvars.json | $JQ ".[0].containername")"
+    BUCKET_NAME="${PROJECT_NAME}secrets"
     DOCKER_PASS="$(cat projectvars.json | $JQ ".[0].dockerpass")"
     DOCKER_USER="$(cat projectvars.json | $JQ ".[0].dockeruser")"
     DOCKER_EMAIL="$(cat projectvars.json | $JQ ".[0].dockeremail")"
@@ -32,7 +33,7 @@ fi;
 deploy_image() {
 
     # this copies the secret settings from our private bucket into the build folder for the docker file to find
-    aws s3 cp s3://mysecretbucket/server_settings.py.$PROJECT_NAME ../server_settings.py --region ap-southeast-1
+    aws s3 cp s3://$BUCKET_NAME/server_settings.py.$PROJECT_NAME ../server_settings.py --region ap-southeast-1
     docker-compose build web
     docker images
     docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS

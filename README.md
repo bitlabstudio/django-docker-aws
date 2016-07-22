@@ -233,6 +233,9 @@ Before we continue here, we'll set up Docker Hub.
     
 * The deploy script will then pull this before CI builds the image so that
   CI can copy it to the container image.
+* You will also need to add the secret bucket name to your CI environment
+  variables as `BUCKET_NAME`
+* Push your code and watch it deploy
 
 ## Issues
 
